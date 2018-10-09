@@ -4,83 +4,81 @@ namespace Mpociot\ApiDoc\Parsers;
 
 class RuleDescriptionParser
 {
-    private $rule;
 
-    private $parameters = [];
+	private $rule;
 
-    const DEFAULT_LOCALE = 'en';
+	private $parameters = [];
 
-    /**
-     * @param null $rule
-     */
-    public function __construct($rule = null)
-    {
-        $this->rule = "apidoc::rules.{$rule}";
-    }
+	const DEFAULT_LOCALE = 'en';
 
-    /**
-     * @return array|string
-     */
-    public function getDescription()
-    {
-        return $this->ruleDescriptionExist() ? $this->makeDescription() : [];
-    }
+	/**
+	 * @param null $rule
+	 */
+	public function __construct($rule = null)
+	{
+		$this->rule = "apidoc::rules.{$rule}";
+	}
 
-    /**
-     * @param string|array $parameters
-     *
-     * @return $this
-     */
-    public function with($parameters)
-    {
-        is_array($parameters) ?
-            $this->parameters += $parameters :
-            $this->parameters[] = $parameters;
+	/**
+	 * @return array|string
+	 */
+	public function getDescription()
+	{
+		return $this->ruleDescriptionExist() ? $this->makeDescription() : [];
+	}
 
-        return $this;
-    }
+	/**
+	 * @param string|array $parameters
+	 *
+	 * @return $this
+	 */
+	public function with($parameters)
+	{
+		is_array($parameters) ? $this->parameters += $parameters : $this->parameters[] = $parameters;
 
-    /**
-     * @return bool
-     */
-    protected function ruleDescriptionExist()
-    {
-        return trans()->hasForLocale($this->rule) || trans()->hasForLocale($this->rule, self::DEFAULT_LOCALE);
-    }
+		return $this;
+	}
 
-    /**
-     * @return string
-     */
-    protected function makeDescription()
-    {
-        $description = trans()->hasForLocale($this->rule) ?
-                            trans()->get($this->rule) :
-                            trans()->get($this->rule, [], self::DEFAULT_LOCALE);
+	/**
+	 * @return bool
+	 */
+	protected function ruleDescriptionExist()
+	{
+		return trans()->hasForLocale($this->rule) || trans()->hasForLocale($this->rule, self::DEFAULT_LOCALE);
+	}
 
-        return $this->replaceAttributes($description);
-    }
+	/**
+	 * @return string
+	 */
+	protected function makeDescription()
+	{
+		$description = trans()->hasForLocale($this->rule) ? trans()->get($this->rule) : trans()->get($this->rule, [], self::DEFAULT_LOCALE);
 
-    /**
-     * @param string $description$
-     *
-     * @return string
-     */
-    protected function replaceAttributes($description)
-    {
-        foreach ($this->parameters as $parameter) {
-            $description = preg_replace('/:attribute/', $parameter, $description, 1);
-        }
+		return $this->replaceAttributes($description);
+	}
 
-        return $description;
-    }
+	/**
+	 * @param string $description $
+	 *
+	 * @return string
+	 */
+	protected function replaceAttributes($description)
+	{
+		foreach( $this->parameters as $parameter )
+		{
+			$description = preg_replace('/:attribute/', $parameter, $description, 1);
+		}
 
-    /**
-     * @param null $rule
-     *
-     * @return static
-     */
-    public static function parse($rule = null)
-    {
-        return new static($rule);
-    }
+		return $description;
+	}
+
+	/**
+	 * @param null $rule
+	 *
+	 * @return static
+	 */
+	public static function parse($rule = null)
+	{
+		return new static($rule);
+	}
 }

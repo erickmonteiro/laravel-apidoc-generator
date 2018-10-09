@@ -8,78 +8,80 @@ use Illuminate\Support\Facades\Request;
 
 class LaravelGenerator extends AbstractGenerator
 {
-    /**
-     * @param Route $route
-     *
-     * @return mixed
-     */
-    public function getUri($route)
-    {
-        if (version_compare(app()->version(), '5.4', '<')) {
-            return $route->getUri();
-        }
 
-        return $route->uri();
-    }
+	/**
+	 * @param Route $route
+	 *
+	 * @return mixed
+	 */
+	public function getUri($route)
+	{
+		if( version_compare(app()->version(), '5.4', '<') )
+		{
+			return $route->getUri();
+		}
 
-    /**
-     * @param Route $route
-     *
-     * @return mixed
-     */
-    public function getMethods($route)
-    {
-        if (version_compare(app()->version(), '5.4', '<')) {
-            $methods = $route->getMethods();
-        } else {
-            $methods = $route->methods();
-        }
+		return $route->uri();
+	}
 
-        return array_diff($methods, ['HEAD']);
-    }
+	/**
+	 * @param Route $route
+	 *
+	 * @return mixed
+	 */
+	public function getMethods($route)
+	{
+		if( version_compare(app()->version(), '5.4', '<') )
+		{
+			$methods = $route->getMethods();
+		}
+		else
+		{
+			$methods = $route->methods();
+		}
 
-    /**
-     * Prepares / Disables route middlewares.
-     *
-     * @param  bool $disable
-     *
-     * @return  void
-     */
-    public function prepareMiddleware($enable = true)
-    {
-        App::instance('middleware.disable', ! $enable);
-    }
+		return array_diff($methods, ['HEAD']);
+	}
 
-    /**
-     * Call the given URI and return the Response.
-     *
-     * @param  string  $method
-     * @param  string  $uri
-     * @param  array  $parameters
-     * @param  array  $cookies
-     * @param  array  $files
-     * @param  array  $server
-     * @param  string  $content
-     *
-     * @return \Illuminate\Http\Response
-     */
-    public function callRoute($method, $uri, $parameters = [], $cookies = [], $files = [], $server = [], $content = null)
-    {
-        $server = collect([
-            'CONTENT_TYPE' => 'application/json',
-            'Accept' => 'application/json',
-        ])->merge($server)->toArray();
+	/**
+	 * Prepares / Disables route middlewares.
+	 *
+	 * @param  bool $disable
+	 *
+	 * @return  void
+	 */
+	public function prepareMiddleware($enable = true)
+	{
+		App::instance('middleware.disable', !$enable);
+	}
 
-        $request = Request::create(
-            $uri, $method, $parameters,
-            $cookies, $files, $this->transformHeadersToServerVars($server), $content
-        );
+	/**
+	 * Call the given URI and return the Response.
+	 *
+	 * @param  string $method
+	 * @param  string $uri
+	 * @param  array  $parameters
+	 * @param  array  $cookies
+	 * @param  array  $files
+	 * @param  array  $server
+	 * @param  string $content
+	 *
+	 * @return \Illuminate\Http\Response
+	 */
+	public function callRoute($method, $uri, $parameters = [], $cookies = [], $files = [], $server = [], $content = null)
+	{
+		$server = collect([
+			'CONTENT_TYPE' => 'application/json',
+			'Accept'       => 'application/json',
+		])->merge($server)->toArray();
 
-        $kernel = App::make('Illuminate\Contracts\Http\Kernel');
-        $response = $kernel->handle($request);
+		$request = Request::create($uri, $method, $parameters, $cookies, $files, $this->transformHeadersToServerVars($server), $content);
 
-        $kernel->terminate($request, $response);
+		$kernel   = App::make('Illuminate\Contracts\Http\Kernel');
+		$response = $kernel->handle($request);
 
-        return $response;
-    }
+		$kernel->terminate($request, $response);
+
+		return $response;
+	}
 }
