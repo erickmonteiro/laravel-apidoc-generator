@@ -13,14 +13,17 @@ class CollectionWriter
 	 */
 	private $routeGroups;
 
+	private $options = [];
+
 	/**
 	 * CollectionWriter constructor.
 	 *
 	 * @param Collection $routeGroups
 	 */
-	public function __construct(Collection $routeGroups)
+	public function __construct(Collection $routeGroups, $options)
 	{
 		$this->routeGroups = $routeGroups;
+		$this->options     = $options;
 	}
 
 	public function getCollection()
@@ -28,7 +31,7 @@ class CollectionWriter
 		$collection = [
 			'variables' => [],
 			'info'      => [
-				'name'        => '',
+				'name'        => isset($this->options['postmanName']) ? $this->options['postmanName'] : '',
 				'_postman_id' => Uuid::uuid4()->toString(),
 				'description' => '',
 				'schema'      => 'https://schema.getpostman.com/json/collection/v2.0.0/collection.json',

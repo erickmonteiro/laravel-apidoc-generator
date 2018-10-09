@@ -31,6 +31,7 @@ class GenerateDocumentation extends Command
                             {--middleware= : The middleware to use for generation}
                             {--noResponseCalls : Disable API response calls}
                             {--noPostmanCollection : Disable Postman collection creation}
+                            {--postmanName : Name Postman Collection}
                             {--useMiddlewares : Use all configured route middlewares}
                             {--authProvider=users : The authentication provider to use for API response calls}
                             {--authGuard=web : The authentication guard to use for API response calls}
@@ -364,7 +365,7 @@ class GenerateDocumentation extends Command
 	 */
 	private function generatePostmanCollection(Collection $routes)
 	{
-		$writer = new CollectionWriter($routes);
+		$writer = new CollectionWriter($routes, $this->options());
 
 		return $writer->getCollection();
 	}
