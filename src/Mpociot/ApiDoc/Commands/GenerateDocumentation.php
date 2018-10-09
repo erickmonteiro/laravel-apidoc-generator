@@ -214,6 +214,9 @@ class GenerateDocumentation extends Command
 
 		$this->info('Generating API HTML code');
 
+		// Copy logo to source
+		$this->copyLogoToSource($outputPath);
+
 		$documentarian->generate($outputPath);
 
 		$this->info('Wrote HTML documentation to: ' . $outputPath . '/index.html');
@@ -368,5 +371,29 @@ class GenerateDocumentation extends Command
 		$writer = new CollectionWriter($routes, $this->options());
 
 		return $writer->getCollection();
+	}
+
+	/**
+	 * Copy logo to source
+	 *
+	 * @param $folder
+	 *
+	 * @return string
+	 */
+	private function copyLogoToSource($folder)
+	{
+		$source_dir = $folder . '/source';
+
+		if( !is_dir($source_dir) )
+		{
+			return false;
+		}
+
+		$logo_path = public_path('images/logo.png');
+
+		if( is_file($logo_path) )
+		{
+			copy(public_path('images/logo.png'), $source_dir . '/assets/images/logo.png');
+		}
 	}
 }
