@@ -41,19 +41,34 @@ class CollectionWriter
 					'name'        => $groupName,
 					'description' => '',
 					'item'        => $routes->map(function ($route) {
+						$auth = [
+							'type' => 'noauth',
+						];
+
+						if( !$route['unauthenticated'] )
+						{
+							$auth = [
+								'type'   => 'bearer',
+								'bearer' => [
+									'token' => '{{access_token}}'
+								]
+							];
+						}
+
 						return [
 							'name'    => $route['title'] != '' ? $route['title'] : url($route['uri']),
 							'request' => [
 								'url'         => url($route['uri']),
 								'method'      => $route['methods'][0],
-								"header"      => [
+								'auth'        => $auth,
+								'header'      => [
 									[
-										"key"   => "Accept",
-										"value" => "application/json",
+										'key'   => 'Accept',
+										'value' => 'application/json',
 									],
 									[
-										"key"   => "Language",
-										"value" => "{{Language}}",
+										'key'   => 'Language',
+										'value' => '{{Language}}',
 									],
 								],
 								'body'        => [

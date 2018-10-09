@@ -102,15 +102,16 @@ abstract class AbstractGenerator
 		$content = $this->getResponseContent($response);
 
 		return $this->getParameters([
-			'id'           => md5($this->getUri($route) . ':' . implode($this->getMethods($route))),
-			'resource'     => $routeGroup,
-			'title'        => $routeDescription['short'],
-			'description'  => $routeDescription['long'],
-			'methods'      => $this->getMethods($route),
-			'uri'          => $this->getUri($route),
-			'parameters'   => [],
-			'response'     => $content,
-			'showresponse' => $showresponse,
+			'id'              => md5($this->getUri($route) . ':' . implode($this->getMethods($route))),
+			'resource'        => $routeGroup,
+			'title'           => $routeDescription['short'],
+			'description'     => $routeDescription['long'],
+			'methods'         => $this->getMethods($route),
+			'uri'             => $this->getUri($route),
+			'unauthenticated' => $this->getDocUnauthenticated($routeDescription['tags']),
+			'parameters'      => [],
+			'response'        => $content,
+			'showresponse'    => $showresponse,
 		], $routeAction, $bindings);
 	}
 
@@ -122,6 +123,27 @@ abstract class AbstractGenerator
 	 * @return  void
 	 */
 	abstract public function prepareMiddleware($enable = false);
+
+	/**
+	 * Get Unauthenticated
+	 *
+	 * @param array $tags
+	 *
+	 * @return mixed
+	 */
+	protected function getDocUnauthenticated($tags)
+	{
+		$responseTags = array_filter($tags, function ($tag) {
+			if( !($tag instanceof Tag) )
+			{
+				return false;
+			}
+
+			return \strtolower($tag->getName()) == 'unauthenticated';
+		});
+
+		return !empty($responseTags);
+	}
 
 	/**
 	 * Get the response from the docblock if available.
@@ -195,10 +217,10 @@ abstract class AbstractGenerator
 		// Laravel will ignore the nested array rules unless the key referenced exists and is an array
 		// So we'll create an empty array for each array attribute
 		$values = collect($newRules)->filter(function ($values) {
-				return in_array('array', $values);
-			})->map(function ($val, $key) {
-				return [str_random()];
-			})->all();
+			return in_array('array', $values);
+		})->map(function ($val, $key) {
+			return [str_random()];
+		})->all();
 
 		// Now this will return the complete ruleset.
 		// Nested array parameters will be present, with '*' replaced by '0'
