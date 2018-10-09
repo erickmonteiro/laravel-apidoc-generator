@@ -46,7 +46,7 @@ class CollectionWriter
 								"header"      => [
 									[
 										"key"   => "Accept",
-										"value" => "{{Accept}}",
+										"value" => "application/json",
 									],
 									[
 										"key"   => "Language",
