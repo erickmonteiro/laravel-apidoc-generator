@@ -28,6 +28,46 @@ class CollectionWriter
 
 	public function getCollection()
 	{
+		$environment = [
+			'id'                      => Uuid::uuid4()->toString(),
+			'name'                    => isset($this->options['postmanName']) ? $this->options['postmanName'] : '',
+			'values'                  => [
+				[
+					'key'     => 'access_token',
+					'value'   => '',
+					'enabled' => true,
+					'type'    => 'text',
+				],
+				[
+					'key'     => 'refresh_token',
+					'value'   => '',
+					'enabled' => true,
+					'type'    => 'text',
+				],
+				[
+					'key'     => 'Language',
+					'value'   => 'pt',
+					'enabled' => true,
+					'type'    => 'text',
+				],
+				[
+					'key'     => 'email',
+					'value'   => 'email@site.com',
+					'enabled' => true,
+					'type'    => 'text',
+				],
+				[
+					'key'     => 'password',
+					'value'   => 'password',
+					'enabled' => true,
+					'type'    => 'text',
+				],
+			],
+			'_postman_variable_scope' => 'environment',
+			'_postman_exported_at'    => '2018-10-12T02:54:07.303Z',
+			'_postman_exported_using' => 'Postman/6.4.2',
+		];
+
 		$collection = [
 			'variables' => [],
 			'info'      => [
@@ -41,6 +81,51 @@ class CollectionWriter
 					'name'        => $groupName,
 					'description' => '',
 					'item'        => $routes->map(function ($route) {
+
+						$is_login   = ends_with($route['uri'], 'auth/login');
+						$is_refresh = ends_with($route['uri'], 'auth/refresh');
+						$is_logout  = ends_with($route['uri'], 'auth/logout');
+
+						$event = [];
+
+						if( $is_login OR $is_refresh )
+						{
+							$event = [
+								[
+									'listen' => 'test',
+									'script' => [
+										'id'   => Uuid::uuid4()->toString(),
+										'exec' => [
+											'var jsonData = pm.response.json();',
+											'',
+											'if (jsonData.hasOwnProperty("access_token"))',
+											'{',
+											'    pm.environment.set("access_token", jsonData.access_token);',
+											'    pm.environment.set("refresh_token", jsonData.refresh_token);',
+											'}',
+										],
+										'type' => 'text/javascript'
+									]
+								]
+							];
+						}
+						elseif( $is_logout )
+						{
+							$event = [
+								[
+									'listen' => 'test',
+									'script' => [
+										'id'   => Uuid::uuid4()->toString(),
+										'exec' => [
+											'pm.environment.set("access_token", "");',
+											'pm.environment.set("refresh_token", "");',
+										],
+										'type' => 'text/javascript'
+									]
+								]
+							];
+						}
+
 						$auth = [
 							'type' => 'noauth',
 						];
@@ -57,6 +142,7 @@ class CollectionWriter
 
 						return [
 							'name'    => $route['title'] != '' ? $route['title'] : url($route['uri']),
+							'event'   => $event,
 							'request' => [
 								'url'         => url($route['uri']),
 								'method'      => $route['methods'][0],
@@ -73,7 +159,27 @@ class CollectionWriter
 								],
 								'body'        => [
 									'mode'     => 'formdata',
-									'formdata' => collect($route['parameters'])->map(function ($parameter, $key) {
+									'formdata' => collect($route['parameters'])->map(function ($parameter, $key) use ($is_login, $is_refresh) {
+
+										if( $is_login )
+										{
+											if( $key == 'email' )
+											{
+												$parameter['value'] = '{{email}}';
+											}
+											elseif( $key == 'password' )
+											{
+												$parameter['value'] = '{{password}}';
+											}
+										}
+										elseif( $is_refresh )
+										{
+											if( $key == 'refresh_token' )
+											{
+												$parameter['value'] = '{{refresh_token}}';
+											}
+										}
+
 										return [
 											'key'     => $key,
 											'value'   => isset($parameter['value']) ? $parameter['value'] : '',
@@ -91,6 +197,9 @@ class CollectionWriter
 			})->values()->toArray(),
 		];
 
-		return json_encode($collection);
+		return [
+			'environment' => json_encode($environment),
+			'collection'  => json_encode($collection),
+		];
 	}
 }

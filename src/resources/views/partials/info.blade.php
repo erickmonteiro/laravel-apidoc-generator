@@ -2,7 +2,9 @@
 
 Welcome to the generated API reference.
 @if($showPostmanCollectionButton)
-[Get Postman Collection]({{url($outputPath.'/collection.json')}})
+<br><br>Do you use Postman? Great.<br>
+[Get Postman Collection]({{url($outputPath.'/collection.json')}})<br>
+[Get Postman Environment]({{url($outputPath.'/environment.json')}})
 @endif
 
 ## Header
@@ -17,8 +19,8 @@ Language | {language} | All requests
 You must replace `{access_token}` with your personal access token.
 </aside>
 <aside class="notice">
-You must replace `{language}` with the desired language.
-When not sent the Accept-Language language is used.
+You must replace `{language}` with the desired language.<br>
+When not sent the Accept-Language language is used.<br>
 Available languages are pt, en.
 </aside>
 

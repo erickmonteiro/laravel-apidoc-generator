@@ -225,7 +225,11 @@ class GenerateDocumentation extends Command
 		{
 			$this->info('Generating Postman collection');
 
-			file_put_contents($outputPath . DIRECTORY_SEPARATOR . 'collection.json', $this->generatePostmanCollection($parsedRoutes));
+			$postman = $this->generatePostmanCollection($parsedRoutes);
+
+			file_put_contents($outputPath . DIRECTORY_SEPARATOR . 'collection.json', $postman['collection']);
+
+			file_put_contents($outputPath . DIRECTORY_SEPARATOR . 'environment.json', $postman['environment']);
 		}
 	}
 
@@ -364,7 +368,7 @@ class GenerateDocumentation extends Command
 	 *
 	 * @param Collection $routes
 	 *
-	 * @return string
+	 * @return array
 	 */
 	private function generatePostmanCollection(Collection $routes)
 	{
