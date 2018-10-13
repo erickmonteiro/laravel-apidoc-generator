@@ -2,6 +2,7 @@
 
 namespace Mpociot\ApiDoc\Generators;
 
+use Exception;
 use Faker\Factory;
 use ReflectionClass;
 use Illuminate\Support\Str;
@@ -113,31 +114,26 @@ abstract class AbstractGenerator
 		$parameters = collect($tags)->filter(function ($tag) {
 			return $tag instanceof Tag && $tag->getName() === 'bodyParam';
 		})->mapWithKeys(function ($tag) {
-			preg_match('/(.+?)\s+(.+?)\s+(required\s+)?(.*)/', $tag->getContent(), $content);
+			preg_match('/(.+?)\s+(.+?)\s+(.+?)\s+(.*)/', $tag->getContent(), $content);
 
 			if( empty($content) )
 			{
-				// this means only name and type were supplied
-				list($name, $type) = preg_split('/\s+/', $tag->getContent());
-				$required    = false;
+				list($name, $type, $populateType) = preg_split('/\s+/', $tag->getContent());
+
 				$description = '';
 			}
 			else
 			{
-				list($_, $name, $type, $required, $description) = $content;
+				list($_, $name, $type, $populateType, $description) = $content;
+
 				$description = trim($description);
-
-				if( $description == 'required' && empty(trim($required)) )
-				{
-					$required    = $description;
-					$description = '';
-				}
-
-				$required = trim($required) == 'required' ? true : false;
 			}
 
+			$required = !(starts_with($name, '[') AND ends_with($name, ']'));
+			$name     = str_replace(['[', ']'], '', $name);
+
 			$type  = $this->normalizeParameterType($type);
-			$value = $this->generateDummyValue($type);
+			$value = $this->generateDummyValue($populateType);
 
 			return [$name => compact('type', 'description', 'required', 'value')];
 		})->toArray();
@@ -313,31 +309,81 @@ abstract class AbstractGenerator
 
 	private function generateDummyValue(string $type)
 	{
-		$faker = Factory::create();
+		$faker = Factory::create(config('app.faker_locale'));
 
 		$fakes = [
-			'integer' => function () {
-				return rand(1, 20);
+			'integer'  => function () {
+				return rand(1, 11);
 			},
-			'number'  => function () use ($faker) {
+			'number'   => function () use ($faker) {
 				return $faker->randomFloat();
 			},
-			'float'   => function () use ($faker) {
+			'float'    => function () use ($faker) {
 				return $faker->randomFloat();
 			},
-			'boolean' => function () use ($faker) {
+			'boolean'  => function () use ($faker) {
 				return $faker->boolean();
 			},
-			'string'  => function () use ($faker) {
-				return str_random();
+			'string'   => function () use ($faker) {
+				return $faker->title;
 			},
-			'array'   => function () {
+			'text'     => function () use ($faker) {
+				return $faker->text;
+			},
+			'html'     => function () use ($faker) {
+				return '<p>' . implode('</p><p>', $faker->paragraphs(2)) . '</p>';
+			},
+			'array'    => function () {
 				return '[]';
 			},
-			'object'  => function () {
+			'object'   => function () {
 				return '{}';
 			},
+			'email'    => function () use ($faker) {
+				return $faker->unique()->safeEmail;
+			},
+			'password' => function () use ($faker) {
+				return $faker->password(6, 15);
+			},
+			'name'     => function () use ($faker) {
+				return $faker->name;
+			},
 		];
+
+		$explode_type = explode('(', $type);
+
+		try
+		{
+			$value = '';
+
+			if( isset($explode_type[1]) )
+			{
+				$params = explode(',', str_replace(')', '', $explode_type[1]));
+
+				foreach( $params as $key => $param )
+				{
+					if( $param === 'false' )
+					{
+						$params[$key] = false;
+					}
+					elseif( $param === 'true' )
+					{
+						$params[$key] = true;
+					}
+				}
+
+				$value = $faker->{$explode_type[0]}(...$params);
+			}
+			else
+			{
+				$value = $faker->{$explode_type[0]};
+			}
+
+			return $value;
+		}
+		catch( Exception $exception )
+		{
+		}
 
 		return isset($fakes[$type]) ? $fakes[$type]() : $fakes['string']();
 	}
