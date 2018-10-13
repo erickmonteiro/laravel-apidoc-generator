@@ -14,7 +14,7 @@ class LaravelGenerator extends AbstractGenerator
 	 *
 	 * @return mixed
 	 */
-	public function getUri($route)
+	public function getUri(Route $route)
 	{
 		if( version_compare(app()->version(), '5.4', '<') )
 		{
@@ -29,7 +29,7 @@ class LaravelGenerator extends AbstractGenerator
 	 *
 	 * @return mixed
 	 */
-	public function getMethods($route)
+	public function getMethods(Route $route)
 	{
 		if( version_compare(app()->version(), '5.4', '<') )
 		{
@@ -70,16 +70,13 @@ class LaravelGenerator extends AbstractGenerator
 	 */
 	public function callRoute($method, $uri, $parameters = [], $cookies = [], $files = [], $server = [], $content = null)
 	{
-		$server = collect([
+		$server   = collect([
 			'CONTENT_TYPE' => 'application/json',
 			'Accept'       => 'application/json',
 		])->merge($server)->toArray();
-
-		$request = Request::create($uri, $method, $parameters, $cookies, $files, $this->transformHeadersToServerVars($server), $content);
-
+		$request  = Request::create($uri, $method, $parameters, $cookies, $files, $this->transformHeadersToServerVars($server), $content);
 		$kernel   = App::make('Illuminate\Contracts\Http\Kernel');
 		$response = $kernel->handle($request);
-
 		$kernel->terminate($request, $response);
 
 		return $response;

@@ -16,10 +16,8 @@ class ApiDocGeneratorServiceProvider extends ServiceProvider
 	public function boot()
 	{
 		$this->loadViewsFrom(__DIR__ . '/../../resources/views/', 'apidoc');
-		$this->loadTranslationsFrom(__DIR__ . '/../../resources/lang', 'apidoc');
 
 		$this->publishes([
-			__DIR__ . '/../../resources/lang'  => $this->resource_path('lang/vendor/apidoc'),
 			__DIR__ . '/../../resources/views' => $this->resource_path('views/vendor/apidoc'),
 		]);
 	}

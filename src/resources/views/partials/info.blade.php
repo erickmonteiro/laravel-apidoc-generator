@@ -1,18 +1,17 @@
 # Introduction
 
 Welcome to the generated API reference.
-@if($showPostmanCollectionButton)
 <br><br>Do you use Postman? Great.<br>
 [Get Postman Collection]({{url($outputPath.'/collection.json')}})<br>
 [Get Postman Environment]({{url($outputPath.'/environment.json')}})
-@endif
 
 ## Header
 
 Header | Value | When should I send?
 -------------- | -------------- | --------------
-Authorization | Bearer {access_token} | Whenever the resource requires an authenticated user
 Accept | application/json | All requests
+Content-Type | application/x-www-form-urlencoded | Must send when passing data in request body
+Authorization | Bearer {access_token} | Whenever the resource requires an authenticated user
 Language | {language} | All requests
 
 <aside class="notice">

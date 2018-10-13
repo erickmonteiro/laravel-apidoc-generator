@@ -11,7 +11,14 @@
 
 ```bash
 curl -X {{$parsedRoute['methods'][0]}} "{{ trim(config('app.docs_url') ?: config('app.url'), '/')}}/{{ ltrim($parsedRoute['uri'], '/') }}" \
-@if(!$parsedRoute['unauthenticated'])-H "Authorization: Bearer {access_token}"@endif -H "Accept: application/json" -H "Language: {language}"@if(count($parsedRoute['parameters'])) \
+@if(!$parsedRoute['unauthenticated'])
+-H "Authorization: Bearer {access_token}" \
+@endif
+-H "Accept: application/json" \
+@if(!in_array($parsedRoute['methods'][0], ['GET','HEAD']))
+-H "Content-Type: application/x-www-form-urlencoded" \
+@endif
+-H "Language: {language}"@if(count($parsedRoute['parameters'])) \
 @foreach($parsedRoute['parameters'] as $attribute => $parameter)
     -d "{{$attribute}}"="{{$parameter['value']}}" \
 @endforeach
@@ -31,6 +38,9 @@ var settings = {
 "headers": {
 @if(!$parsedRoute['unauthenticated'])
         "Authorization": "Bearer {access_token}",
+@endif
+@if(!in_array($parsedRoute['methods'][0], ['GET','HEAD']))
+        "Content-Type": "application/x-www-form-urlencoded",
 @endif
         "Accept": "application/json",
         "Language": "{language}"
@@ -65,7 +75,7 @@ $.ajax(settings).done(function (response) {
 Parameter | Type | Status | Description
 --------- | ------- | ------- | ------- | -----------
 @foreach($parsedRoute['parameters'] as $attribute => $parameter)
-    {{$attribute}} | {{$parameter['type']}} | @if($parameter['required']) required @else optional @endif | {!! implode(' ',$parameter['description']) !!}
+    {{$attribute}} | {{$parameter['type']}} | @if($parameter['required']) required @else optional @endif | {!! $parameter['description'] !!}
 @endforeach
 @endif
 

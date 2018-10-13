@@ -140,6 +140,30 @@ class CollectionWriter
 							];
 						}
 
+						$body_mode = 'formdata';
+
+						$header = [
+							[
+								'key'   => 'Accept',
+								'value' => 'application/json',
+							],
+						];
+
+						if( !in_array($route['methods'][0], ['GET', 'HEAD']) AND count($route['parameters']) )
+						{
+							$header[] = [
+								'key'   => 'Content-Type',
+								'value' => 'application/x-www-form-urlencoded',
+							];
+
+							$body_mode = 'urlencoded';
+						}
+
+						$header[] = [
+							'key'   => 'Language',
+							'value' => '{{Language}}',
+						];
+
 						return [
 							'name'    => $route['title'] != '' ? $route['title'] : url($route['uri']),
 							'event'   => $event,
@@ -147,19 +171,10 @@ class CollectionWriter
 								'url'         => url($route['uri']),
 								'method'      => $route['methods'][0],
 								'auth'        => $auth,
-								'header'      => [
-									[
-										'key'   => 'Accept',
-										'value' => 'application/json',
-									],
-									[
-										'key'   => 'Language',
-										'value' => '{{Language}}',
-									],
-								],
+								'header'      => $header,
 								'body'        => [
-									'mode'     => 'formdata',
-									'formdata' => collect($route['parameters'])->map(function ($parameter, $key) use ($is_login, $is_refresh) {
+									'mode'     => $body_mode,
+									$body_mode => collect($route['parameters'])->map(function ($parameter, $key) use ($is_login, $is_refresh) {
 
 										if( $is_login )
 										{
@@ -181,10 +196,11 @@ class CollectionWriter
 										}
 
 										return [
-											'key'     => $key,
-											'value'   => isset($parameter['value']) ? $parameter['value'] : '',
-											'type'    => 'text',
-											'enabled' => true,
+											'key'         => $key,
+											'value'       => isset($parameter['value']) ? $parameter['value'] : '',
+											'type'        => 'text',
+											'description' => strip_tags($parameter['description']),
+											'enabled'     => true,
 										];
 									})->values()->toArray(),
 								],

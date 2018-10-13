@@ -7,10 +7,8 @@ use Illuminate\Routing\Route;
 use Illuminate\Console\Command;
 use Mpociot\Reflection\DocBlock;
 use Illuminate\Support\Collection;
-use Dingo\Api\Routing\RouteCollection;
 use Mpociot\Documentarian\Documentarian;
 use Mpociot\ApiDoc\Postman\CollectionWriter;
-use Mpociot\ApiDoc\Generators\DingoGenerator;
 use Mpociot\ApiDoc\Generators\LaravelGenerator;
 use Mpociot\ApiDoc\Generators\AbstractGenerator;
 use Illuminate\Support\Facades\Route as RouteFacade;
@@ -25,21 +23,12 @@ class GenerateDocumentation extends Command
 	 */
 	protected $signature = 'api:generate
                             {--output=public/docs : The output path for the generated documentation}
-                            {--routeDomain= : The route domain (or domains) to use for generation}
                             {--routePrefix= : The route prefix (or prefixes) to use for generation}
                             {--routes=* : The route names to use for generation}
-                            {--middleware= : The middleware to use for generation}
-                            {--noResponseCalls : Disable API response calls}
-                            {--noPostmanCollection : Disable Postman collection creation}
                             {--postmanName= : Name Postman Collection}
-                            {--useMiddlewares : Use all configured route middlewares}
                             {--authProvider=users : The authentication provider to use for API response calls}
                             {--authGuard=web : The authentication guard to use for API response calls}
                             {--actAsUserId= : The user ID to use for API response calls}
-                            {--router=laravel : The router to be used (Laravel or Dingo)}
-                            {--force : Force rewriting of existing routes}
-                            {--bindings= : Route Model Bindings}
-                            {--header=* : Custom HTTP headers to add to the example requests. Separate the header name and value with ":"}
     ';
 
 	/**
@@ -66,43 +55,28 @@ class GenerateDocumentation extends Command
 	 */
 	public function handle()
 	{
-		if( $this->option('router') === 'laravel' )
-		{
-			$generator = new LaravelGenerator();
-		}
-		else
-		{
-			$generator = new DingoGenerator();
-		}
-
+		$generator     = new LaravelGenerator();
 		$allowedRoutes = $this->option('routes');
-		$routeDomain   = $this->option('routeDomain');
 		$routePrefix   = $this->option('routePrefix');
-		$middleware    = $this->option('middleware');
 
 		$this->setUserToBeImpersonated($this->option('actAsUserId'));
 
-		if( $routePrefix === null && $routeDomain === null && !count($allowedRoutes) && $middleware === null )
+		if( $routePrefix === null && !count($allowedRoutes) )
 		{
-			$this->error('You must provide either a route prefix, a route domain, a route or a middleware to generate the documentation.');
+			$this->error('You must provide either a route prefix or a route to generate the documentation.');
 
 			return false;
 		}
 
-		$generator->prepareMiddleware($this->option('useMiddlewares'));
-
 		$routePrefixes = explode(',', $routePrefix ? : '*');
-		$routeDomains  = explode(',', $routeDomain ? : '*');
 
 		$parsedRoutes = [];
 
-		foreach( $routeDomains as $routeDomain )
+		foreach( $routePrefixes as $routePrefix )
 		{
-			foreach( $routePrefixes as $routePrefix )
-			{
-				$parsedRoutes += $this->processRoutes($generator, $allowedRoutes, $routeDomain, $routePrefix, $middleware);
-			}
+			$parsedRoutes += $this->processRoutes($generator, $allowedRoutes, $routePrefix);
 		}
+
 		$parsedRoutes = collect($parsedRoutes)->groupBy('resource')->sort(function ($a, $b) {
 			return strcmp($a->first()['resource'], $b->first()['resource']);
 		});
@@ -119,13 +93,10 @@ class GenerateDocumentation extends Command
 	{
 		$outputPath  = $this->option('output');
 		$targetFile  = $outputPath . DIRECTORY_SEPARATOR . 'source' . DIRECTORY_SEPARATOR . 'index.md';
-		$compareFile = $outputPath . DIRECTORY_SEPARATOR . 'source' . DIRECTORY_SEPARATOR . '.compare.md';
 		$prependFile = $outputPath . DIRECTORY_SEPARATOR . 'source' . DIRECTORY_SEPARATOR . 'prepend.md';
 		$appendFile  = $outputPath . DIRECTORY_SEPARATOR . 'source' . DIRECTORY_SEPARATOR . 'append.md';
 
-		$infoText = view('apidoc::partials.info')
-			->with('outputPath', ltrim($outputPath, 'public/'))
-			->with('showPostmanCollectionButton', !$this->option('noPostmanCollection'));
+		$infoText = view('apidoc::partials.info')->with('outputPath', ltrim($outputPath, 'public/'));
 
 		$parsedRouteOutput = $parsedRoutes->map(function ($routeGroup) {
 			return $routeGroup->map(function ($route) {
@@ -136,43 +107,6 @@ class GenerateDocumentation extends Command
 		});
 
 		$frontmatter = view('apidoc::partials.frontmatter');
-		/*
-		 * In case the target file already exists, we should check if the documentation was modified
-		 * and skip the modified parts of the routes.
-		 */
-		if( file_exists($targetFile) && file_exists($compareFile) )
-		{
-			$generatedDocumentation = file_get_contents($targetFile);
-			$compareDocumentation   = file_get_contents($compareFile);
-
-			if( preg_match('/---(.*)---\\s<!-- START_INFO -->/is', $generatedDocumentation, $generatedFrontmatter) )
-			{
-				$frontmatter = trim($generatedFrontmatter[1], "\n");
-			}
-
-			$parsedRouteOutput->transform(function ($routeGroup) use ($generatedDocumentation, $compareDocumentation) {
-				return $routeGroup->transform(function ($route) use ($generatedDocumentation, $compareDocumentation) {
-					if( preg_match('/<!-- START_' . $route['id'] . ' -->(.*)<!-- END_' . $route['id'] . ' -->/is', $generatedDocumentation, $routeMatch) )
-					{
-						$routeDocumentationChanged = (preg_match('/<!-- START_' . $route['id'] . ' -->(.*)<!-- END_' . $route['id'] . ' -->/is', $compareDocumentation, $compareMatch) && $compareMatch[1] !== $routeMatch[1]);
-						if( $routeDocumentationChanged === false || $this->option('force') )
-						{
-							if( $routeDocumentationChanged )
-							{
-								$this->warn('Discarded manual changes for route [' . implode(',', $route['methods']) . '] ' . $route['uri']);
-							}
-						}
-						else
-						{
-							$this->warn('Skipping modified route [' . implode(',', $route['methods']) . '] ' . $route['uri']);
-							$route['modified_output'] = $routeMatch[0];
-						}
-					}
-
-					return $route;
-				});
-			});
-		}
 
 		$prependFileContents = file_exists($prependFile) ? file_get_contents($prependFile) . "\n" : '';
 		$appendFileContents  = file_exists($appendFile) ? "\n" . file_get_contents($appendFile) : '';
@@ -186,7 +120,6 @@ class GenerateDocumentation extends Command
 			->with('prependMd', $prependFileContents)
 			->with('appendMd', $appendFileContents)
 			->with('outputPath', $this->option('output'))
-			->with('showPostmanCollectionButton', !$this->option('noPostmanCollection'))
 			->with('parsedRoutes', $parsedRouteOutput);
 
 		if( !is_dir($outputPath) )
@@ -196,19 +129,6 @@ class GenerateDocumentation extends Command
 
 		// Write output file
 		file_put_contents($targetFile, $markdown);
-
-		// Write comparable markdown file
-		$compareMarkdown = view('apidoc::documentarian')
-			->with('writeCompareFile', true)
-			->with('frontmatter', $frontmatter)
-			->with('infoText', $infoText)
-			->with('prependMd', $prependFileContents)
-			->with('appendMd', $appendFileContents)
-			->with('outputPath', $this->option('output'))
-			->with('showPostmanCollectionButton', !$this->option('noPostmanCollection'))
-			->with('parsedRoutes', $parsedRouteOutput);
-
-		file_put_contents($compareFile, $compareMarkdown);
 
 		$this->info('Wrote index.md to: ' . $outputPath);
 
@@ -221,38 +141,13 @@ class GenerateDocumentation extends Command
 
 		$this->info('Wrote HTML documentation to: ' . $outputPath . '/index.html');
 
-		if( $this->option('noPostmanCollection') !== true )
-		{
-			$this->info('Generating Postman collection');
+		$this->info('Generating Postman collection');
 
-			$postman = $this->generatePostmanCollection($parsedRoutes);
+		$postman = $this->generatePostmanCollection($parsedRoutes);
 
-			file_put_contents($outputPath . DIRECTORY_SEPARATOR . 'collection.json', $postman['collection']);
+		file_put_contents($outputPath . DIRECTORY_SEPARATOR . 'collection.json', $postman['collection']);
 
-			file_put_contents($outputPath . DIRECTORY_SEPARATOR . 'environment.json', $postman['environment']);
-		}
-	}
-
-	/**
-	 * @return array
-	 */
-	private function getBindings()
-	{
-		$bindings = $this->option('bindings');
-		if( empty($bindings) )
-		{
-			return [];
-		}
-
-		$bindings       = explode('|', $bindings);
-		$resultBindings = [];
-		foreach( $bindings as $binding )
-		{
-			list($name, $id) = explode(',', $binding);
-			$resultBindings[$name] = $id;
-		}
-
-		return $resultBindings;
+		file_put_contents($outputPath . DIRECTORY_SEPARATOR . 'environment.json', $postman['environment']);
 	}
 
 	/**
@@ -283,42 +178,28 @@ class GenerateDocumentation extends Command
 	 */
 	private function getRoutes()
 	{
-		if( $this->option('router') === 'laravel' )
-		{
-			return RouteFacade::getRoutes();
-		}
-		else
-		{
-			$allRouteCollections = app(\Dingo\Api\Routing\Router::class)->getRoutes();
-
-			return collect($allRouteCollections)->flatMap(function (RouteCollection $collection) {
-				return $collection->getRoutes();
-			})->toArray();
-		}
+		return RouteFacade::getRoutes();
 	}
 
 	/**
 	 * @param AbstractGenerator $generator
-	 * @param                   $allowedRoutes
-	 * @param                   $routeDomain
+	 * @param array             $allowedRoutes
 	 * @param                   $routePrefix
 	 *
 	 * @return array
 	 */
-	private function processRoutes(AbstractGenerator $generator, array $allowedRoutes, $routeDomain, $routePrefix, $middleware)
+	private function processRoutes(AbstractGenerator $generator, array $allowedRoutes, $routePrefix)
 	{
-		$withResponse = $this->option('noResponseCalls') == false;
 		$routes       = $this->getRoutes();
-		$bindings     = $this->getBindings();
 		$parsedRoutes = [];
 		foreach( $routes as $route )
 		{
 			/** @var Route $route */
-			if( in_array($route->getName(), $allowedRoutes) || (str_is($routeDomain, $generator->getDomain($route)) && str_is($routePrefix, $generator->getUri($route))) || in_array($middleware, $route->middleware()) )
+			if( in_array($route->getName(), $allowedRoutes) || str_is($routePrefix, $generator->getUri($route)) )
 			{
 				if( $this->isValidRoute($route) && $this->isRouteVisibleForDocumentation($route->getAction()['uses']) )
 				{
-					$parsedRoutes[] = $generator->processRoute($route, $bindings, $this->option('header'), $withResponse && in_array('GET', $generator->getMethods($route)));
+					$parsedRoutes[] = $generator->processRoute($route);
 					$this->info('Processed route: [' . implode(',', $generator->getMethods($route)) . '] ' . $generator->getUri($route));
 				}
 				else
