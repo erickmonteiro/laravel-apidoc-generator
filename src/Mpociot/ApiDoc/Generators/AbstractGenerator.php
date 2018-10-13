@@ -54,6 +54,7 @@ abstract class AbstractGenerator
 			'methods'         => $this->getMethods($route),
 			'uri'             => $this->getUri($route),
 			'unauthenticated' => $this->getDocUnauthenticated($docBlock['tags']),
+			'permission'      => $this->getDocPermission($docBlock['tags']),
 			'parameters'      => $this->getParametersFromDocBlock($docBlock['tags']),
 			'response'        => $content,
 			'showresponse'    => !empty($content),
@@ -75,10 +76,33 @@ abstract class AbstractGenerator
 				return false;
 			}
 
-			return \strtolower($tag->getName()) == 'unauthenticated';
+			return strtolower($tag->getName()) == 'unauthenticated';
 		});
 
 		return !empty($responseTags);
+	}
+
+	/**
+	 * Get Permission
+	 *
+	 * @param array $tags
+	 *
+	 * @return mixed
+	 */
+	protected function getDocPermission($tags)
+	{
+		$responseTags = array_filter($tags, function ($tag) {
+			return $tag instanceof Tag && strtolower($tag->getName()) == 'permission';
+		});
+
+		if( empty($responseTags) )
+		{
+			return null;
+		}
+
+		$responseTag = \array_first($responseTags);
+
+		return $responseTag->getContent();
 	}
 
 	/**
@@ -91,12 +115,12 @@ abstract class AbstractGenerator
 	protected function getDocblockResponse($tags)
 	{
 		$responseTags = array_filter($tags, function ($tag) {
-			return $tag instanceof Tag && \strtolower($tag->getName()) == 'response';
+			return $tag instanceof Tag && strtolower($tag->getName()) == 'response';
 		});
 
 		if( empty($responseTags) )
 		{
-			return;
+			return null;
 		}
 
 		$responseTag = \array_first($responseTags);
@@ -348,6 +372,9 @@ abstract class AbstractGenerator
 			'name'     => function () use ($faker) {
 				return $faker->name;
 			},
+			'token'    => function () use ($faker) {
+				return str_random(60);
+			},
 		];
 
 		$explode_type = explode('(', $type);
@@ -358,21 +385,31 @@ abstract class AbstractGenerator
 
 			if( isset($explode_type[1]) )
 			{
-				$params = explode(',', str_replace(')', '', $explode_type[1]));
+				$explode_type[1] = str_replace(')', '', $explode_type[1]);
 
-				foreach( $params as $key => $param )
+				// Status value
+				if( $explode_type[0] === 'static' )
 				{
-					if( $param === 'false' )
-					{
-						$params[$key] = false;
-					}
-					elseif( $param === 'true' )
-					{
-						$params[$key] = true;
-					}
+					$value = $explode_type[1];
 				}
+				else
+				{
+					$params = explode(',', $explode_type[1]);
 
-				$value = $faker->{$explode_type[0]}(...$params);
+					foreach( $params as $key => $param )
+					{
+						if( $param === 'false' )
+						{
+							$params[$key] = false;
+						}
+						elseif( $param === 'true' )
+						{
+							$params[$key] = true;
+						}
+					}
+
+					$value = $faker->{$explode_type[0]}(...$params);
+				}
 			}
 			else
 			{

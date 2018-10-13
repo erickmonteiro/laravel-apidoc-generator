@@ -204,7 +204,7 @@ class CollectionWriter
 										];
 									})->values()->toArray(),
 								],
-								'description' => $route['description'],
+								'description' => ($route['permission'] ? 'Permission Required: ' . $route['permission'] . "\n\n" : '') . $route['description'],
 								'response'    => [],
 							],
 						];
