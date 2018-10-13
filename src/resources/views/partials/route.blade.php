@@ -69,6 +69,11 @@ $.ajax(settings).done(function (response) {
 `{{$method}} {{$parsedRoute['uri']}}`
 
 @endforeach
+@if($parsedRoute['permission'])
+#### Permission Required
+`{{ $parsedRoute['permission'] }}`
+
+@endif
 @if(count($parsedRoute['parameters']))
 #### Parameters
 
