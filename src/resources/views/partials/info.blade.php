@@ -10,7 +10,8 @@ Welcome to the generated API reference.
 Header | Value | When should I send?
 -------------- | -------------- | --------------
 Accept | application/json | All requests
-Content-Type | application/x-www-form-urlencoded | Must send when passing data in request body
+Content-Type | application/x-www-form-urlencoded | Must send when passing query string in request body
+Content-Type | application/json | Must send when passing json in request body
 Content-Type | multipart/form-data | Must send when passing files in request body
 Authorization | Bearer {access_token} | Whenever the resource requires an authenticated user
 Language | {language} | All requests
