@@ -9,46 +9,33 @@
 
 > Example request:
 
-```bash
-curl -X {{$parsedRoute['methods'][0]}} "{{ trim(config('app.docs_url') ?: config('app.url'), '/')}}/{{ ltrim($parsedRoute['uri'], '/') }}" \
-@if(!$parsedRoute['unauthenticated'])
--H "Authorization: Bearer {access_token}" \
-@endif
--H "Accept: application/json" \
-@if(!in_array($parsedRoute['methods'][0], ['GET','HEAD']))
--H "Content-Type: application/x-www-form-urlencoded" \
-@endif
--H "Language: {language}"@if(count($parsedRoute['parameters'])) \
-@foreach($parsedRoute['parameters'] as $attribute => $parameter)
-    -d "{{$attribute}}"="{{$parameter['value']}}" \
-@endforeach
-@endif
-
-```
-
 ```javascript
-var settings = {
-    "async": true,
-    "crossDomain": true,
+const axios = require('axios');
+
+$.axios({
     "url": "{{ rtrim(config('app.docs_url') ?: config('app.url'), '/') }}/{{ ltrim($parsedRoute['uri'], '/') }}",
-    "method": "{{$parsedRoute['methods'][0]}}",
-    @if(count($parsedRoute['parameters']))
-"data": {!! str_replace('    ','        ',json_encode(array_combine(array_keys($parsedRoute['parameters']), array_map(function($param){ return $param['value']; },$parsedRoute['parameters'])), JSON_PRETTY_PRINT)) !!},
-    @endif
-"headers": {
+    "method": "{{ mb_strtolower($parsedRoute['methods'][0]) }}",
+    "headers": {
 @if(!$parsedRoute['unauthenticated'])
         "Authorization": "Bearer {access_token}",
 @endif
 @if(!in_array($parsedRoute['methods'][0], ['GET','HEAD']))
-        "Content-Type": "application/x-www-form-urlencoded",
+        "Content-Type": "{{ $parsedRoute['has_file_parameter'] ? 'multipart/form-data' : 'application/x-www-form-urlencoded' }}",
 @endif
         "Accept": "application/json",
         "Language": "{language}"
-    }
-}
-
-$.ajax(settings).done(function (response) {
+    }@if(count($parsedRoute['parameters'])),
+    "data": {!! str_replace('    ','        ',json_encode(array_combine(array_keys($parsedRoute['parameters']), array_map(function($param){ return $param['value']; },$parsedRoute['parameters'])), JSON_PRETTY_PRINT)) !!}
+@endif
+})
+.then(function (response) {
     console.log(response);
+})
+.catch(function (error) {
+    console.log(error);
+})
+.then(function () {
+    // optional, always executed
 });
 ```
 

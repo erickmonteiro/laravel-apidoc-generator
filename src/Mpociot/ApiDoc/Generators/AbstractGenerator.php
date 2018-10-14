@@ -45,19 +45,21 @@ abstract class AbstractGenerator
 		$routeGroup  = $this->getRouteGroup($routeAction['uses']);
 		$docBlock    = $this->parseDocBlock($routeAction['uses']);
 		$content     = $this->getResponse($docBlock['tags']);
+		$parameters  = $this->getParametersFromDocBlock($docBlock['tags']);
 
 		return [
-			'id'              => md5($this->getUri($route) . ':' . implode($this->getMethods($route))),
-			'resource'        => $routeGroup,
-			'title'           => $docBlock['short'],
-			'description'     => $docBlock['long'],
-			'methods'         => $this->getMethods($route),
-			'uri'             => $this->getUri($route),
-			'unauthenticated' => $this->getDocUnauthenticated($docBlock['tags']),
-			'permission'      => $this->getDocPermission($docBlock['tags']),
-			'parameters'      => $this->getParametersFromDocBlock($docBlock['tags']),
-			'response'        => $content,
-			'showresponse'    => !empty($content),
+			'id'                 => md5($this->getUri($route) . ':' . implode($this->getMethods($route))),
+			'resource'           => $routeGroup,
+			'title'              => $docBlock['short'],
+			'description'        => $docBlock['long'],
+			'methods'            => $this->getMethods($route),
+			'uri'                => $this->getUri($route),
+			'unauthenticated'    => $this->getDocUnauthenticated($docBlock['tags']),
+			'permission'         => $this->getDocPermission($docBlock['tags']),
+			'parameters'         => $parameters,
+			'has_file_parameter' => $this->hasFileParameter($parameters),
+			'response'           => $content,
+			'showresponse'       => !empty($content),
 		];
 	}
 
@@ -163,6 +165,27 @@ abstract class AbstractGenerator
 		})->toArray();
 
 		return $parameters;
+	}
+
+	/**
+	 * @param array $parameters
+	 *
+	 * @return mixed
+	 */
+	protected function hasFileParameter($parameters)
+	{
+		if( count($parameters) )
+		{
+			foreach( $parameters as $parameter )
+			{
+				if( $parameter['type'] === 'file' )
+				{
+					return true;
+				}
+			}
+		}
+
+		return false;
 	}
 
 	/**
@@ -366,8 +389,8 @@ abstract class AbstractGenerator
 			'email'    => function () use ($faker) {
 				return $faker->unique()->safeEmail;
 			},
-			'password' => function () use ($faker) {
-				return $faker->password(6, 15);
+			'password' => function () {
+				return str_random(10);
 			},
 			'name'     => function () use ($faker) {
 				return $faker->name;
@@ -375,7 +398,15 @@ abstract class AbstractGenerator
 			'token'    => function () use ($faker) {
 				return str_random(60);
 			},
+			'file'     => function () use ($faker) {
+				return '{file}';
+			},
 		];
+
+		if( isset($fakes[$type]) )
+		{
+			return $fakes[$type]();
+		}
 
 		$explode_type = explode('(', $type);
 

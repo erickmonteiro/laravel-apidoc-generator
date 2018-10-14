@@ -140,7 +140,7 @@ class CollectionWriter
 							];
 						}
 
-						$body_mode = 'formdata';
+						$body_mode = 'urlencoded';
 
 						$header = [
 							[
@@ -151,12 +151,22 @@ class CollectionWriter
 
 						if( !in_array($route['methods'][0], ['GET', 'HEAD']) AND count($route['parameters']) )
 						{
-							$header[] = [
-								'key'   => 'Content-Type',
-								'value' => 'application/x-www-form-urlencoded',
-							];
+							if( $route['has_file_parameter'] )
+							{
+								$header[] = [
+									'key'   => 'Content-Type',
+									'value' => 'multipart/form-data',
+								];
 
-							$body_mode = 'urlencoded';
+								$body_mode = 'formdata';
+							}
+							else
+							{
+								$header[] = [
+									'key'   => 'Content-Type',
+									'value' => 'application/x-www-form-urlencoded',
+								];
+							}
 						}
 
 						$header[] = [
@@ -198,7 +208,7 @@ class CollectionWriter
 										return [
 											'key'         => $key,
 											'value'       => isset($parameter['value']) ? $parameter['value'] : '',
-											'type'        => 'text',
+											'type'        => $parameter['type'] === 'file' ? 'file' : 'text',
 											'description' => strip_tags($parameter['description']),
 											'enabled'     => true,
 										];
