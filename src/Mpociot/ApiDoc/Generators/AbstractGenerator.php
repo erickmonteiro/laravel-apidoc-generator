@@ -140,28 +140,25 @@ abstract class AbstractGenerator
 		$parameters = collect($tags)->filter(function ($tag) {
 			return $tag instanceof Tag && $tag->getName() === 'bodyParam';
 		})->mapWithKeys(function ($tag) {
-			preg_match('/(.+?)\s+(.+?)\s+(.+?)\s+(.*)/', $tag->getContent(), $content);
+			preg_match('/(.+?)\s+(.+?)\s+(.+?)\s+(.+?)\s+(.*)/', $tag->getContent(), $content);
 
 			if( empty($content) )
 			{
-				list($name, $type, $populateType) = preg_split('/\s+/', $tag->getContent());
+				list($name, $type, $validation, $populateType) = preg_split('/\s+/', $tag->getContent());
 
 				$description = '';
 			}
 			else
 			{
-				list($_, $name, $type, $populateType, $description) = $content;
+				list($_, $name, $type, $validation, $populateType, $description) = $content;
 
 				$description = trim($description);
 			}
 
-			$required = !(starts_with($name, '[') AND ends_with($name, ']'));
-			$name     = str_replace(['[', ']'], '', $name);
-
 			$type  = $this->normalizeParameterType($type);
 			$value = $this->generateDummyValue($populateType);
 
-			return [$name => compact('type', 'description', 'required', 'value')];
+			return [$name => compact('type', 'description', 'validation', 'value')];
 		})->toArray();
 
 		return $parameters;

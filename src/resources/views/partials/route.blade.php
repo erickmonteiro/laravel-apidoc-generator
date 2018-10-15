@@ -64,10 +64,10 @@ $.axios({
 @if(count($parsedRoute['parameters']))
 #### Parameters
 
-Parameter | Type | Status | Description
+Parameter | Type | Validation | Description
 --------- | ------- | ------- | ------- | -----------
 @foreach($parsedRoute['parameters'] as $attribute => $parameter)
-    {{$attribute}} | {{$parameter['type']}} | @if($parameter['required']) required @else optional @endif | {!! $parameter['description'] !!}
+    {{$attribute}} | {{$parameter['type']}} | {{$parameter['validation']}} | {!! $parameter['description'] !!}
 @endforeach
 @endif
 

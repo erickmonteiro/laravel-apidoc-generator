@@ -209,7 +209,7 @@ class CollectionWriter
 											'key'         => $key,
 											'value'       => isset($parameter['value']) ? $parameter['value'] : '',
 											'type'        => $parameter['type'] === 'file' ? 'file' : 'text',
-											'description' => strip_tags($parameter['description']),
+											'description' => $parameter['validation'] . ' - ' . strip_tags($parameter['description']),
 											'enabled'     => true,
 										];
 									})->values()->toArray(),
