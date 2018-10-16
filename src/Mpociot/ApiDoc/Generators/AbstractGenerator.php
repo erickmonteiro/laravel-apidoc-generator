@@ -369,10 +369,10 @@ abstract class AbstractGenerator
 				return $faker->boolean();
 			},
 			'string'   => function () use ($faker) {
-				return $faker->title;
+				return $faker->sentence();
 			},
 			'text'     => function () use ($faker) {
-				return $faker->text;
+				return $faker->text(191);
 			},
 			'html'     => function () use ($faker) {
 				return '<p>' . implode('</p><p>', $faker->paragraphs(2)) . '</p>';
