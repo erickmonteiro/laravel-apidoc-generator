@@ -67,7 +67,7 @@ $.axios({
 Parameter | Type | Validation | Description
 --------- | ------- | ------- | ------- | -----------
 @foreach($parsedRoute['parameters'] as $attribute => $parameter)
-    {{$attribute}} | {{$parameter['type']}} | {!! str_replace('|', '&vert;', $parameter['validation']) !!} | {!! $parameter['description'] !!}
+    {{$attribute}} | {!! str_replace('|', '&vert;', $parameter['type']) !!} | {!! str_replace('|', '&vert;', $parameter['validation']) !!} | {!! $parameter['description'] !!}
 @endforeach
 @endif
 
