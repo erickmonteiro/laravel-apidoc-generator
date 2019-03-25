@@ -28,10 +28,10 @@ Available languages are pt, en.
 ## Controlling requests
 
 All API requests are limited to prevent abuse and ensure stability.<br>
-The limit is 60 requests every 5 minutes.<br>
+The limit is 120 requests every 1 minute.<br>
 You can always check the response header to have a status of available requests:
 
-`X-RateLimit-Limit → 60`<br>
+`X-RateLimit-Limit → 120`<br>
 `X-RateLimit-Remaining → 29`
 
 ## Errors
