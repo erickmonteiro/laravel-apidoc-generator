@@ -38,12 +38,12 @@ class CollectionWriter
 					'enabled' => true,
 					'type'    => 'text',
 				],
-				[
-					'key'     => 'refresh_token',
-					'value'   => '',
-					'enabled' => true,
-					'type'    => 'text',
-				],
+				//[
+				//	'key'     => 'refresh_token',
+				//	'value'   => '',
+				//	'enabled' => true,
+				//	'type'    => 'text',
+				//],
 				[
 					'key'     => 'Language',
 					'value'   => 'pt',
@@ -101,7 +101,7 @@ class CollectionWriter
 											'if (jsonData.hasOwnProperty("access_token"))',
 											'{',
 											'    pm.environment.set("access_token", jsonData.access_token);',
-											'    pm.environment.set("refresh_token", jsonData.refresh_token);',
+											//'    pm.environment.set("refresh_token", jsonData.refresh_token);',
 											'}',
 										],
 										'type' => 'text/javascript'
@@ -118,7 +118,7 @@ class CollectionWriter
 										'id'   => Uuid::uuid4()->toString(),
 										'exec' => [
 											'pm.environment.set("access_token", "");',
-											'pm.environment.set("refresh_token", "");',
+											//'pm.environment.set("refresh_token", "");',
 										],
 										'type' => 'text/javascript'
 									]
